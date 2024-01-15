@@ -47,6 +47,7 @@ function showHelp() {
     echo 'ruleta -m [DINERO] -t [ESTRATEGIA]'
     echoOption m 'Cantidad de dinero disponible'
     echoOption t 'Estrategia a utilizar'
+    echoOption v 'Describe las jugadas'
     echoOption h 'Muestra esta ayuda'
 
     echo -e '\nEstrategias disponibles:'
@@ -94,9 +95,9 @@ function basicBetStatus() {
     local money_total=$1
     local money_bet=$2
     local num=$3
-    echo "    Dinero total: $(tint "$c_purple" "$money_total €")"
-    echo "    Apuestas $(tint "$c_purple" "$money_bet €"), te quedan $(tint "$c_purple" "$((money_total - money_bet)) €")"
-    echo "    Sale el número: [$num]"
+    [[ -n "$V" ]] && echo "    Dinero total: $(tint "$c_purple" "$money_total €")"
+    [[ -n "$V" ]] && echo "    Apuestas $(tint "$c_purple" "$money_bet €"), te quedan $(tint "$c_purple" "$((money_total - money_bet)) €")"
+    [[ -n "$V" ]] && echo "    Sale el número: [$num]"
 }
 
 function martingala() {
@@ -106,13 +107,23 @@ function martingala() {
   askBetMoney "$money_total" # BET_RES
   local money_bet=$BET_RES
   local money_bet_init=$BET_RES
+  echo
+
   askBetEvenOdd # POS_RES
   local even_odd_bet=$POS_RES
+  echo
 
   local pos_s
   pos_s=$([[ $even_odd_bet == 0 ]] && echo par || echo impar)
-  echo -e "\nVamos a jugar con $BET_RES € a $pos_s"
-  echo -e "¡Empezamos!\n"
+  echo "Vamos a jugar con $BET_RES € a $pos_s"
+  echo "¡Empezamos!"
+
+  if [[ -n "$V" ]]; then
+    echo "¡Empezamos!"
+  else
+    echo "Calculando jugadas..."
+  fi
+  echo
   tput civis
 
   local play_count_total
@@ -131,38 +142,38 @@ function martingala() {
     basicBetStatus "$money_total" "$money_bet" "$num"
 
     if ((num % 2 == 0)); then
-      echo "[+] Salió par"
+      [[ -n "$V" ]] && echo "[+] Salió par"
     elif ((num % 2 == 1)); then
-      echo "[-] Salió impar"
+      [[ -n "$V" ]] && echo "[-] Salió impar"
     else
-      echo "[0] Salió cero"
+      [[ -n "$V" ]] && echo "[0] Salió cero"
     fi
 
     if ((num % 2 == even_odd_bet && num != 0)); then
       ((play_count_good++))
       consec_bad_plays=()
       local money_win=$(((money_bet * 2)))
-      echo "    $(tint "$c_green" "Ganaste") $(tint "$c_purple" "$money_win €") $(tint "$c_green" ":D")"
+      [[ -n "$V" ]] && echo "    $(tint "$c_green" "Ganaste") $(tint "$c_purple" "$money_win €") $(tint "$c_green" ":D")"
       ((money_total += money_win))
-      tint "$c_turquoise" "    Volvemos a la apuesta inicial..."
+      [[ -n "$V" ]] && tint "$c_turquoise" "    Volvemos a la apuesta inicial..."
       ((money_bet = money_bet_init))
     else
       ((play_count_bad++))
       consec_bad_plays=("${consec_bad_plays[@]}" "$num")
-      tint "$c_red" "    Perdiste :("
+      [[ -n "$V" ]] && tint "$c_red" "    Perdiste :("
       ((money_total -= money_bet))
       ((money_bet *= 2))
-      echo "    $(tint "$c_turquoise" "Doblamos la apuesta (")$(tint "$c_purple" "$money_bet €")$(tint "$c_turquoise" ")")"
+      [[ -n "$V" ]] && echo "    $(tint "$c_turquoise" "Doblamos la apuesta (")$(tint "$c_purple" "$money_bet €")$(tint "$c_turquoise" ")")"
       if ((money_total - money_bet < 0)); then
-        echo
-        tint "$c_red" "No tienes suficiente dinero para doblar"
-        echo
+        [[ -n "$V" ]] && echo
+        [[ -n "$V" ]] && tint "$c_red" "No tienes suficiente dinero para doblar"
+        [[ -n "$V" ]] && echo
         break
       fi
     fi
-    echo "    Tienes $(tint "$c_purple" "$money_total €")"
+    [[ -n "$V" ]] && echo "    Tienes $(tint "$c_purple" "$money_total €")"
 
-    echo
+    [[ -n "$V" ]] && echo
   done
 
   echo -n "Dinero final $money_total € "
@@ -200,10 +211,11 @@ function reverseLabouchere() {
 
 trap ctrlC INT
 
-while getopts 'm:t:h' arg; do
+while getopts 'm:t:vh' arg; do
   case "$arg" in
     m) money=$OPTARG ;;
     t) strategy=$OPTARG ;;
+    v) V="verbose" ;;
     h) showHelp; exit ;;
     *) exit ;;
   esac
