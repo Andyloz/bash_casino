@@ -136,8 +136,15 @@ function martingala() {
   local consec_bad_plays
   consec_bad_plays=()
 
+  local money_top
+  money_top=$money_total
+
   while true; do
     ((play_count_total++))
+    if ((money_total > money_top)); then
+      money_top=$money_total
+    fi
+
     num=$(roulette)
     basicBetStatus "$money_total" "$money_bet" "$num"
 
@@ -196,6 +203,7 @@ function martingala() {
     echo
   fi
 
+  echo " $(tint "$c_yellow" "->") Cantidad en mano más grande $(tint "$c_purple" "$money_top") €"
   echo " $(tint "$c_yellow" "->") Han habido $(tint "$c_purple" "$play_count_total") jugadas "
   echo " $(tint "$c_yellow" "->") Jugadas malas: $(tint "$c_purple" "$play_count_bad")"
   echo " $(tint "$c_yellow" "->") Jugadas buenas: $(tint "$c_purple" "$play_count_good")"
