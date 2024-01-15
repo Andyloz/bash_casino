@@ -31,10 +31,13 @@ function echoOption() {
 }
 
 function ctrlC() {
-    echoInfo -e 'Saliendo...'
+  tput cnorm
+  tput rc
+  echoInfo 'Saliendo...'
+  exit 1
 }
 
-function validInt() {
+function validUInt() {
   case $1 in
       '' | *[!0-9]*) return 1 ;;
       *) return 0 ;;
@@ -44,7 +47,7 @@ function validInt() {
 function showHelp() {
     echoInfo 'Uso del comando:'
     echo 'ruleta -m [DINERO] -t [ESTRATEGIA]'
-    echoOption m 'Cantidad de dinero a apostar'
+    echoOption m 'Cantidad de dinero disponible'
     echoOption t 'Estrategia a utilizar'
     echoOption h 'Muestra esta ayuda'
 
@@ -53,12 +56,55 @@ function showHelp() {
     echo '  - reverseLabouchere'
 }
 
-function martingala() {
+function dynamicOutputExample() {
+  tput civis
+  tput sc
+  a=0
+  while true; do
+    tput rc
+    echo "$a"
+    ((a++))
+  done
+}
 
+function askBetMoney() {
+  local maxBet=$1
+  while true; do
+    echo -n "¿Cuanto dinero vas a apostar? (Disponible: $money €) -> " && read -r bet
+    if ! validUInt "$bet"; then
+      echo "Introduzca un número entero válido!!"
+    elif ((maxBet < bet)); then
+      echo "No puedes apostar más de $maxBet €"
+    else
+      MONEY_RES="$bet"
+      return
+    fi
+  done
+}
+
+function askBetEvenOdd() {
+  while true; do
+    echo -n "¿A cuál vas a apostar? (par/impar) -> " && read -r pos
+    if [[ "$pos" == "par" || "$pos" == "impar" ]]; then
+      POS_RES="$pos"
+      return
+    else
+      echo "Introduzca una opción válida"
+    fi
+  done
+}
+
+function martingala() {
+  local money=$1
+  echo "Dinero disponible_ $money €"
+  askBetMoney "$money" # MONEY_RES
+  askBetEvenOdd # POS_RES
+
+  echo "Vamos a jugar con $MONEY_RES € a $POS_RES"
 }
 
 function reverseLabouchere() {
-
+  echo "WIP"
 }
 
 trap ctrlC INT
@@ -72,7 +118,7 @@ while getopts 'm:t:h' arg; do
   esac
 done
 
-if ! validInt "$money"; then
+if ! validUInt "$money"; then
   echoError "Invalid money"
   exit 1
 fi
