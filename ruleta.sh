@@ -100,6 +100,7 @@ function basicBetStatus() {
 }
 
 function martingala() {
+  local money_initial=$1
   local money_total=$1
 
   askBetMoney "$money_total" # BET_RES
@@ -112,8 +113,20 @@ function martingala() {
   pos_s=$([[ $even_odd_bet == 0 ]] && echo par || echo impar)
   echo -e "\nVamos a jugar con $BET_RES € a $pos_s"
   echo -e "¡Empezamos!\n"
+  tput civis
+
+  local play_count_total
+  local play_count_bad
+  local play_count_good
+  play_count_total=0
+  play_count_bad=0
+  play_count_good=0
+
+  local consec_bad_plays
+  consec_bad_plays=()
 
   while true; do
+    ((play_count_total++))
     num=$(roulette)
     basicBetStatus "$money_total" "$money_bet" "$num"
 
@@ -126,13 +139,16 @@ function martingala() {
     fi
 
     if ((num % 2 == even_odd_bet && num != 0)); then
+      ((play_count_good++))
+      consec_bad_plays=()
       local money_win=$(((money_bet * 2)))
       echo "    $(tint "$c_green" "Ganaste") $(tint "$c_purple" "$money_win €") $(tint "$c_green" ":D")"
       ((money_total += money_win))
       tint "$c_turquoise" "    Volvemos a la apuesta inicial..."
       ((money_bet = money_bet_init))
-      sleep 1
     else
+      ((play_count_bad++))
+      consec_bad_plays=("${consec_bad_plays[@]}" "$num")
       tint "$c_red" "    Perdiste :("
       ((money_total -= money_bet))
       ((money_bet *= 2))
@@ -140,15 +156,42 @@ function martingala() {
       if ((money_total - money_bet < 0)); then
         echo
         tint "$c_red" "No tienes suficiente dinero para doblar"
-        echo "Dinero final $money_total €"
-        exit
+        echo
+        break
       fi
     fi
     echo "    Tienes $(tint "$c_purple" "$money_total €")"
 
     echo
-    sleep 1.2
   done
+
+  echo -n "Dinero final $money_total € "
+  local money_diff
+  ((money_diff = money_total - money_initial))
+
+  local money_diff_color
+  local money_diff_symbol
+  if ((money_diff > 0)); then
+    money_diff_color=$c_yellow
+    money_diff_symbol="+"
+  elif ((money_diff < 0)); then
+    money_diff_color=$c_red
+    money_diff_symbol=""
+  fi
+
+  if ((money_diff != 0)); then
+    tint "$money_diff_color" "($money_diff_symbol$money_diff €)"
+  else
+    echo
+  fi
+
+  echo " $(tint "$c_yellow" "->") Han habido $(tint "$c_purple" "$play_count_total") jugadas "
+  echo " $(tint "$c_yellow" "->") Jugadas malas: $(tint "$c_purple" "$play_count_bad")"
+  echo " $(tint "$c_yellow" "->") Jugadas buenas: $(tint "$c_purple" "$play_count_good")"
+  echo "Jugadas malas consecutivas:"
+  echo "${consec_bad_plays[@]}"
+
+  tput cnorm
 }
 
 function reverseLabouchere() {
