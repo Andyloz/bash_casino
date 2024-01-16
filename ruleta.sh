@@ -95,6 +95,8 @@ function basicBetStatus() {
     local money_total=$1
     local money_bet=$2
     local num=$3
+    local even_odd_bet=$4
+
     [[ -n "$V" ]] && echo "    Dinero total: $(tint "$c_purple" "$money_total €")"
     [[ -n "$V" ]] && echo "    Apuestas $(tint "$c_purple" "$money_bet €"), te quedan $(tint "$c_purple" "$((money_total - money_bet)) €")"
     [[ -n "$V" ]] && echo "    Sale el número: [$num]"
@@ -105,6 +107,13 @@ function basicBetStatus() {
       [[ -n "$V" ]] && echo "[-] Salió impar"
     else
       [[ -n "$V" ]] && echo "[0] Salió cero"
+    fi
+
+    if ((num % 2 == even_odd_bet && num != 0)); then
+      local money_win=$(((money_bet * 2)))
+      [[ -n "$V" ]] && echo "    $(tint "$c_green" "Ganaste") $(tint "$c_purple" "$money_win €") $(tint "$c_green" ":D")"
+    else
+      [[ -n "$V" ]] && tint "$c_red" "    Perdiste :("
     fi
 }
 
@@ -167,18 +176,14 @@ function martingala() {
   echo
   tput civis
 
-  local play_count_total
-  local play_count_bad
-  local play_count_good
-  play_count_total=0
-  play_count_bad=0
-  play_count_good=0
+  local play_count_total=0
+  local play_count_bad=0
+  local play_count_good=0
 
   local consec_bad_plays
   consec_bad_plays=()
 
-  local money_top
-  money_top=$money_total
+  local money_top=$money_total
 
   while true; do
     ((play_count_total++))
@@ -189,18 +194,15 @@ function martingala() {
     num=$(roulette)
     basicBetStatus "$money_total" "$money_bet" "$num"
 
-    if ((num % 2 == even_odd_bet && num != 0)); then # todo refactor if possible
+    if ((num % 2 == even_odd_bet && num != 0)); then
       ((play_count_good++))
       consec_bad_plays=()
-      local money_win=$(((money_bet * 2)))
-      [[ -n "$V" ]] && echo "    $(tint "$c_green" "Ganaste") $(tint "$c_purple" "$money_win €") $(tint "$c_green" ":D")"
-      ((money_total += money_win))
+      ((money_total += money_bet * 2))
       [[ -n "$V" ]] && tint "$c_turquoise" "    Volvemos a la apuesta inicial..."
       ((money_bet = money_bet_init))
     else
       ((play_count_bad++))
       consec_bad_plays=("${consec_bad_plays[@]}" "$num")
-      [[ -n "$V" ]] && tint "$c_red" "    Perdiste :("
       ((money_total -= money_bet))
       ((money_bet *= 2))
       [[ -n "$V" ]] && echo "    $(tint "$c_turquoise" "Doblamos la apuesta (")$(tint "$c_purple" "$money_bet €")$(tint "$c_turquoise" ")")"
@@ -231,7 +233,9 @@ function reverseLabouchere() {
   local even_odd_bet=$POS_RES
   echo
 
-  echo "Vamos a jugar con la secuencia $(tint "c_purple" "[ 1 2 3 4 ]")"
+  local sequence
+  sequence=(1 2 3 4)
+  echo "Vamos a jugar con la secuencia $(tint "c_purple" "${sequence[@]}")"
 
   if [[ -n "$V" ]]; then
     tint "$c_yellow" "¡Empezamos!"
@@ -241,15 +245,9 @@ function reverseLabouchere() {
   echo
   tput civis
 
-  local play_count_total
-  local play_count_bad
-  local play_count_good
-  play_count_total=0
-  play_count_bad=0
-  play_count_good=0
-
-  local consec_bad_plays #todo consec remove
-  consec_bad_plays=()
+  local play_count_total=0
+  local play_count_bad=0
+  local play_count_good=0
 
   local money_top
   money_top=$money_total
@@ -265,16 +263,11 @@ function reverseLabouchere() {
 
     if ((num % 2 == even_odd_bet && num != 0)); then
       ((play_count_good++))
-      consec_bad_plays=()
-      local money_win=$(((money_bet * 2)))
-      [[ -n "$V" ]] && echo "    $(tint "$c_green" "Ganaste") $(tint "$c_purple" "$money_win €") $(tint "$c_green" ":D")"
-      ((money_total += money_win))
+      ((money_total += money_bet * 2))
       [[ -n "$V" ]] && tint "$c_turquoise" "    Volvemos a la apuesta inicial..."
       ((money_bet = money_bet_init))
     else
       ((play_count_bad++))
-      consec_bad_plays=("${consec_bad_plays[@]}" "$num")
-      [[ -n "$V" ]] && tint "$c_red" "    Perdiste :("
       ((money_total -= money_bet))
       ((money_bet *= 2))
       [[ -n "$V" ]] && echo "    $(tint "$c_turquoise" "Doblamos la apuesta (")$(tint "$c_purple" "$money_bet €")$(tint "$c_turquoise" ")")"
@@ -291,9 +284,6 @@ function reverseLabouchere() {
   done
 
   betsSummary "$money_initial" "$money_total" "$money_top" "$play_count_total" "$play_count_bad" "$play_count_good"
-  echo "Jugadas malas consecutivas:"
-  echo "${consec_bad_plays[@]}"
-
   tput cnorm
 }
 
