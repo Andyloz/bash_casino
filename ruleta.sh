@@ -58,7 +58,7 @@ function showHelp() {
 function askBetMoney() {
   local maxBet=$1
   while true; do
-    echo -n "¿A qué deseas apostar continuamente? (Disponible: $maxBet €) -> "; read -r bet
+    echo -n "$(tint "$c_blue" "¿A qué deseas apostar continuamente?") (Disponible: $maxBet €) -> "; read -r bet
     if ! validUInt "$bet"; then
       echo "Introduzca un número entero válido!!"
     elif ((maxBet < bet)); then
@@ -74,7 +74,7 @@ function askBetMoney() {
 
 function askBetEvenOdd() {
   while true; do
-    echo -n "¿A cuál vas a apostar? (par/impar) -> "; read -r pos
+    echo -n "$(tint "$c_blue" "¿A cuál vas a apostar?") (par/impar) -> "; read -r pos
     if [[ "$pos" == "par" ]]; then
       POS_RES=0
       return
@@ -113,7 +113,7 @@ function basicBetStatus() {
       local money_win=$(((money_bet * 2)))
       [[ -n "$V" ]] && echo "    $(tint "$c_green" "Ganaste") $(tint "$c_purple" "$money_win €") $(tint "$c_green" ":D")"
     else
-      [[ -n "$V" ]] && tint "$c_red" "    Perdiste :("
+      [[ -n "$V" ]] && tint "$c_red" "    Perdiste $(tint "$c_purple" "$money_bet €") :("
     fi
 }
 
@@ -166,7 +166,7 @@ function martingala() {
 
   local pos_s
   pos_s=$([[ $even_odd_bet == 0 ]] && echo par || echo impar)
-  echo "Vamos a jugar con $(tint "$c_purple" "$money_bet") € a $(tint "c_purple" "$pos_s")"
+  echo "Vamos a jugar con $(tint "$c_purple" "$money_bet") € a $(tint "$c_purple" "$pos_s")"
 
   if [[ -n "$V" ]]; then
     tint "$c_yellow" "¡Empezamos!"
@@ -192,7 +192,7 @@ function martingala() {
     fi
 
     num=$(roulette)
-    basicBetStatus "$money_total" "$money_bet" "$num"
+    basicBetStatus "$money_total" "$money_bet" "$num" "$even_odd_bet"
 
     if ((num % 2 == even_odd_bet && num != 0)); then
       ((play_count_good++))
@@ -259,7 +259,7 @@ function reverseLabouchere() {
     fi
 
     num=$(roulette)
-    basicBetStatus "$money_total" "$money_bet" "$num"
+    basicBetStatus "$money_total" "$money_bet" "$num" "$even_odd_bet"
 
     if ((num % 2 == even_odd_bet && num != 0)); then
       ((play_count_good++))
