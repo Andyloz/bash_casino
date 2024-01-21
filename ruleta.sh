@@ -235,7 +235,7 @@ function reverseLabouchere() {
 
   local sequence
   sequence=(1 2 3 4)
-  echo "Vamos a jugar con la secuencia $(tint "c_purple" "${sequence[@]}")"
+  echo "Vamos a jugar con la secuencia $(tint "$c_purple" "${sequence[*]}")"
 
   if [[ -n "$V" ]]; then
     tint "$c_yellow" "¡Empezamos!"
@@ -249,8 +249,9 @@ function reverseLabouchere() {
   local play_count_bad=0
   local play_count_good=0
 
-  local money_top
-  money_top=$money_total
+  local consec_bad_plays=()
+
+  local money_top=$money_total
 
   while true; do
     ((play_count_total++))
@@ -258,28 +259,41 @@ function reverseLabouchere() {
       money_top=$money_total
     fi
 
+    if ! ((${#sequence[@]})); then
+      [[ -n "$V" ]] && tint "$c_red" "Nos hemos quedado sin números en la secuencia"
+      echo
+      break
+    fi
+
+    if ((${#sequence[@]} == 1)); then
+      money_bet=${sequence[0]}
+    else
+      money_bet=$(((sequence[0] + sequence[-1])))
+    fi
+
+    if ((money_bet > money_total)); then
+      [[ -n "$V" ]] && tint "$c_red" "No tienes suficiente dinero apostar"
+      echo
+      break
+    fi
+
     num=$(roulette)
     basicBetStatus "$money_total" "$money_bet" "$num" "$even_odd_bet"
 
     if ((num % 2 == even_odd_bet && num != 0)); then
       ((play_count_good++))
+      consec_bad_plays=()
       ((money_total += money_bet * 2))
-      [[ -n "$V" ]] && tint "$c_turquoise" "    Volvemos a la apuesta inicial..."
-      ((money_bet = money_bet_init))
+      sequence=("${sequence[@]}" "$money_bet")
     else
       ((play_count_bad++))
+      consec_bad_plays=("${consec_bad_plays[@]}" "$num")
       ((money_total -= money_bet))
-      ((money_bet *= 2))
-      [[ -n "$V" ]] && echo "    $(tint "$c_turquoise" "Doblamos la apuesta (")$(tint "$c_purple" "$money_bet €")$(tint "$c_turquoise" ")")"
-      if ((money_total - money_bet < 0)); then
-        [[ -n "$V" ]] && echo
-        [[ -n "$V" ]] && tint "$c_red" "No tienes suficiente dinero para doblar"
-        [[ -n "$V" ]] && echo
-        break
-      fi
+      sequence=("${sequence[@]:1:$((${#sequence[@]} - 2))}")
     fi
-    [[ -n "$V" ]] && echo "    Tienes $(tint "$c_purple" "$money_total €")"
 
+    [[ -n "$V" ]] && tint "$c_turquoise" "    Jugamos con la secuencia $(tint "$c_purple" "${sequence[*]}") ..."
+    [[ -n "$V" ]] && echo "    Tienes $(tint "$c_purple" "$money_total €")"
     [[ -n "$V" ]] && echo
   done
 
