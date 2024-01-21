@@ -260,9 +260,10 @@ function reverseLabouchere() {
     fi
 
     if ! ((${#sequence[@]})); then
-      [[ -n "$V" ]] && tint "$c_red" "Nos hemos quedado sin números en la secuencia"
-      echo
-      break
+      sequence=(1 2 3 4)
+      [[ -n "$V" ]] && echo "$(tint "$c_yellow" "Reiniciamos la secuencia") $(tint "$c_purple" "${sequence[*]}")"
+      [[ -n "$V" ]] && echo
+      continue
     fi
 
     if ((${#sequence[@]} == 1)); then
